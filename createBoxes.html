@@ -1,0 +1,145 @@
+<html>
+<head>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.js"></script>
+<link rel="stylesheet" type="text/css" href="jquery-ui/jquery-ui.structure.min.css">
+<link rel="stylesheet" type="text/css" href="jquery-ui/jquery-ui.theme.min.css">
+<link rel="stylesheet" type="text/css" href="jquery-ui/jquery-ui.min.css">
+
+
+<style>
+
+body {
+    padding:10px;
+}
+#canvas {
+    border:1px solid black;
+    background-repeat:no-repeat;
+    width:550px; 
+    height:350px;
+}
+.resizeDiv {
+	border:1px solid red;
+	width:40px;
+	height:40px;
+	position:relative;
+}
+</style>
+
+</head>
+<body>
+
+<p>Resize the image using the 4 draggable corner anchors</p>
+<p>You can also drag the image</p>
+<div id="canvas">
+
+</div>
+<div id="output"></div>
+
+
+<input type="file" id="fileElem" accept="image/*" style="display:none" onchange="handleFiles(this.files)">
+<a href="#" id="fileSelect">Add a new file</a> 
+<div id="fileList">
+  <p>No files selected!</p>
+</div>
+
+
+<script>
+
+window.URL = window.URL || window.webkitURL;
+
+var fileSelect = document.getElementById("fileSelect"),
+    fileElem = document.getElementById("fileElem"),
+    fileList = document.getElementById("fileList");
+
+fileSelect.addEventListener("click", function (e) {
+  if (fileElem) {
+    fileElem.click();
+  }
+  e.preventDefault(); // prevent navigation to "#"
+}, false);
+
+function handleFiles(files) {
+  if (!files.length) {
+    fileList.innerHTML = "<p>No files selected!</p>";
+  } else {
+    fileList.innerHTML = "";
+    var list = document.createElement("ul");
+    fileList.appendChild(list);
+    for (var i = 0; i < files.length; i++) {
+      
+      var img = document.createElement("img");
+      img.src = window.URL.createObjectURL(files[i]);
+      $('#canvas').css('background-image', 'url(' + img.src + ')');
+      console.log("Changing height: "+this.height+" width: "+this.width);
+      
+      img.onload = function() {
+        window.URL.revokeObjectURL(this.src);
+        console.log("Changing height: "+img.height+" width: "+img.width);
+        $('#canvas').css('height', img.height+'px');
+      	$('#canvas').css('width', img.width+'px');
+      }
+      var info = document.createElement("span");
+      //info.innerHTML = files[i].name + ": " + files[i].size + " bytes";
+      addSquares(files[i].name);
+    }
+  }
+}
+
+
+function addSquares(filename) {
+	console.log("Adding squares for name "+filename);
+	for(var i=0; i < filename.length; i++) {
+		if(filename.charAt(i) == ".") {
+			return;
+		}
+		//$('#canvas').append("<div class=\"resizeDiv\" id=\""+i+"\"></div>");
+		$("<div/>", {
+       "class": "resizeDiv",
+        "id": i,
+      }).resizable().draggable().css('left', i*50+"px")
+      .appendTo("#canvas");
+		//$("#"+i+"").css('left', i*50+"px");
+
+	}
+	$('.resizeDiv')
+    .draggable()
+    .resizable();
+
+	$('.resizeDiv')
+	.resizable({
+	    start: function(e, ui) {
+	        alert('resizing started');
+	    },
+	    resize: function(e, ui) {
+	     
+	    },
+	    stop: function(e, ui) {
+	        alert('resizing stopped');
+	    }
+	});
+}
+
+</script>
+<script>
+//    $("#output").html(imageX+", "+imageY+", "+imageRight+", "+imageBottom);
+
+$('.resizeDiv')
+    .draggable()
+    .resizable();
+
+$('.resizeDiv')
+.resizable({
+    start: function(e, ui) {
+        alert('resizing started');
+    },
+    resize: function(e, ui) {
+     
+    },
+    stop: function(e, ui) {
+        alert('resizing stopped');
+    }
+});
+</script>
+</body>
+</html>

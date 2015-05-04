@@ -46,9 +46,6 @@ class TesseractTrainer():
 				newFilePath = root+".tiff"
 				image.save(self.directory+"/"+newFilePath)
 
-				#call tesseract to do OCR on the newly-created image
-				#subprocess.call(["tesseract", newFilePath, "output"])
-
 
 	#Looks for box files, uses the box filename to find the corresponding
 	#.tiff file. Renames all files with the appropriate "<language>.<font>.exp<N>" filename
