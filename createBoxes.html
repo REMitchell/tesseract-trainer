@@ -1,6 +1,6 @@
 <html>
 <head>
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.js"></script>
 <link rel="stylesheet" type="text/css" href="jquery-ui/jquery-ui.structure.min.css">
 <link rel="stylesheet" type="text/css" href="jquery-ui/jquery-ui.theme.min.css">
@@ -85,7 +85,18 @@ function handleFiles(files) {
     }
   }
 }
+$('body').on('mouseup', 'div.resizeDiv', function() {
+	var outputText = "";
+    $( ".resizeDiv" ).each(function() {
+    	var position = $(this).position();
+    	var right = position.left + $(this).width();
+    	var bottom = position.top + $(this).height();
+    	outputText += $(this).attr("value")+" "+position.left+" "+position.top+" "+right+" "+bottom+"<br>";
+	});
+	console.log(outputText);
+	$("#output").html(outputText);
 
+});
 
 function addSquares(filename) {
 	console.log("Adding squares for name "+filename);
@@ -98,48 +109,31 @@ function addSquares(filename) {
        "class": "resizeDiv",
         "id": i,
       }).resizable().draggable().css('left', i*50+"px")
+		.addClass("resizeDiv").attr('id', i).attr('value',filename.charAt(i))
       .appendTo("#canvas");
 		//$("#"+i+"").css('left', i*50+"px");
 
 	}
-	$('.resizeDiv')
-    .draggable()
-    .resizable();
-
-	$('.resizeDiv')
-	.resizable({
-	    start: function(e, ui) {
-	        alert('resizing started');
-	    },
-	    resize: function(e, ui) {
-	     
-	    },
-	    stop: function(e, ui) {
-	        alert('resizing stopped');
-	    }
-	});
 }
 
 </script>
 <script>
-//    $("#output").html(imageX+", "+imageY+", "+imageRight+", "+imageBottom);
-
-$('.resizeDiv')
-    .draggable()
-    .resizable();
 
 $('.resizeDiv')
 .resizable({
     start: function(e, ui) {
-        alert('resizing started');
+        console.log('resizing started');
     },
     resize: function(e, ui) {
      
     },
     stop: function(e, ui) {
-        alert('resizing stopped');
+        console.log('resizing stopped');
     }
 });
+
+//Handles 
 </script>
+
 </body>
 </html>
