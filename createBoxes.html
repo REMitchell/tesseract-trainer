@@ -15,8 +15,8 @@ body {
 #canvas {
     border:1px solid black;
     background-repeat:no-repeat;
-    width:550px; 
-    height:350px;
+    width:150px; 
+    height:150px;
 }
 .resizeDiv {
 	border:1px solid red;
@@ -28,12 +28,13 @@ body {
 
 </head>
 <body>
-
+<div id="title"></div>
 <p>Resize the image using the 4 draggable corner anchors</p>
 <p>You can also drag the image</p>
 <div id="canvas">
 
 </div>
+<span id="download" style="">Download .box</span>
 <div id="output"></div>
 
 
@@ -100,21 +101,23 @@ $('body').on('mouseup', 'div.resizeDiv', function() {
 
 function addSquares(filename) {
 	console.log("Adding squares for name "+filename);
+  var title = "";
 	for(var i=0; i < filename.length; i++) {
 		if(filename.charAt(i) == ".") {
+      $("#title").html(title);
 			return;
 		}
-		//$('#canvas').append("<div class=\"resizeDiv\" id=\""+i+"\"></div>");
+		title  = title+filename.charAt(i);
 		$("<div/>", {
        "class": "resizeDiv",
         "id": i,
       }).resizable().draggable().css('left', i*50+"px")
 		.addClass("resizeDiv").attr('id', i).attr('value',filename.charAt(i))
       .appendTo("#canvas");
-		//$("#"+i+"").css('left', i*50+"px");
 
 	}
 }
+
 
 </script>
 <script>
@@ -133,6 +136,37 @@ $('.resizeDiv')
 });
 
 //Handles 
+</script>
+
+<script>
+$("#download").click(function(){
+  console.log("Clicked on download link");
+  var boxText = $("#output").html();
+  boxText = boxText.replace(/<br>/g, "%0A");
+  //<a download='FileName' href='data:application/octet-stream;charset=utf-16le;base64,//5mAG8AbwAgAGIAYQByAAoA'>
+  //<a href="">text file</a>
+  //var link = "data:text/plain;charset=utf-8;base64,//"+boxText;
+
+  var link = "data:application/octet-stream;filename="+$("#title").html()+".box," + encodeURIComponent(boxText);
+  console.log($("#title").html());
+  console.log(link);
+  saveAs(link, $("#title").html()+".box");
+
+});
+
+
+function saveAs(uri, filename) {
+    var link = document.createElement('a');
+    if (typeof link.download === 'string') {
+        document.body.appendChild(link); // Firefox requires the link to be in the body
+        link.download = filename;
+        link.href = uri;
+        link.click();
+        document.body.removeChild(link); // remove the link when done
+    } else {
+        location.replace(uri);
+    }
+}
 </script>
 
 </body>
