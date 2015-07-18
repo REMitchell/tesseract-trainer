@@ -11,6 +11,8 @@
 
 body {
     padding:10px;
+    font-family: Helvetica, Arial, Sans-Serif;
+    font-size:14px;
 }
 #canvas {
     border:1px solid black;
@@ -24,26 +26,38 @@ body {
 	height:40px;
 	position:relative;
 }
+#output {
+  font-family:"Lucida Console", Monaco, monospace;
+}
+
+#download {
+  cursor:pointer;
+  text-decoration:underline;
+  color:#00f;
+}
 </style>
 
 </head>
 <body>
+<table><tr>
+<td>
 <div id="title"></div>
-<p>Resize the image using the 4 draggable corner anchors</p>
-<p>You can also drag the image</p>
+<p>Center each box over its corresponding character. The box file on the right is downloadable</p>
 <div id="canvas">
-
 </div>
-<span id="download" style="">Download .box</span>
-<div id="output"></div>
-
-
 <input type="file" id="fileElem" accept="image/*" style="display:none" onchange="handleFiles(this.files)">
+<p>
 <a href="#" id="fileSelect">Add a new file</a> 
 <div id="fileList">
+  <p>
   <p>No files selected!</p>
 </div>
+</td><td>
+<div id="output"></div>
 
+<span id="download" style="">Download .box</span>
+
+</td></tr></table>
 
 <script>
 
@@ -72,7 +86,6 @@ function handleFiles(files) {
       var img = document.createElement("img");
       img.src = window.URL.createObjectURL(files[i]);
       $('#canvas').css('background-image', 'url(' + img.src + ')');
-      console.log("Changing height: "+this.height+" width: "+this.width);
       
       img.onload = function() {
         window.URL.revokeObjectURL(this.src);
@@ -100,22 +113,31 @@ $('body').on('mouseup', 'div.resizeDiv', function() {
 });
 
 function addSquares(filename) {
+  //Get rid of the old squares
+  $('.resizeDiv').remove();
 	console.log("Adding squares for name "+filename);
   var title = "";
 	for(var i=0; i < filename.length; i++) {
 		if(filename.charAt(i) == ".") {
       $("#title").html(title);
+        //Clear any box file already generated
+        $('#content').html();
+        //Trigger a click on the first square to make sure the box file/content area gets populated
+        $('#0').trigger('click');
 			return;
 		}
+    //If we haven't hit a "." yet, add characters
 		title  = title+filename.charAt(i);
 		$("<div/>", {
        "class": "resizeDiv",
         "id": i,
-      }).resizable().draggable().css('left', i*50+"px")
-		.addClass("resizeDiv").attr('id', i).attr('value',filename.charAt(i))
+      }).resizable().draggable().css('left', i*50+"px").css('display','inline-block').css('opacity','.7')
+    .attr('value',filename.charAt(i)).prepend(filename.charAt(i))
+		.addClass("resizeDiv").attr('id', i)
       .appendTo("#canvas");
 
 	}
+
 }
 
 
@@ -142,7 +164,7 @@ $('.resizeDiv')
 $("#download").click(function(){
   console.log("Clicked on download link");
   var boxText = $("#output").html();
-  boxText = boxText.replace(/<br>/g, "%0A");
+  boxText = boxText.replace(/<br>/g, "\n");
   //<a download='FileName' href='data:application/octet-stream;charset=utf-16le;base64,//5mAG8AbwAgAGIAYQByAAoA'>
   //<a href="">text file</a>
   //var link = "data:text/plain;charset=utf-8;base64,//"+boxText;
