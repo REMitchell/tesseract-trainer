@@ -2,7 +2,6 @@ from PIL import Image
 import subprocess
 import os
 import numpy
-import time
 
 #Steps to take before running:
 #Set TESSDATA_PREFIX to correct directory
@@ -13,14 +12,10 @@ class TesseractTrainer():
 	def __init__(self):
 		self.languageName = "eng"
 		self.fontName = "captchaFont"
-		self.directory = "/Users/ryan/Documents/newCaptchas"
+		self.directory = "/Users/ryan/Documents/tesseract-trainer/images"
 		self.trainingList = None
 		self.boxList = None
 
-	def main(self):
-		languageName = "eng"
-		fontName = "captchaFont"
-		directory = "/Users/ryan/Documents/newCaptchas"
 
 	def runAll(self):
 		self.createFontFile()
@@ -40,7 +35,7 @@ class TesseractTrainer():
 			if fileName.endswith("jpg") or fileName.endswith("jpeg") or fileName.endswith("png"):
 				image = Image.open(self.directory+"/"+fileName)
 				#Set a threshold value for the image, and save
-				image = image.point(lambda x: 0 if x<143 else 255)
+				image = image.point(lambda x: 0 if x<250 else 255)
 				(root, ext) = os.path.splitext(fileName)
 
 				newFilePath = root+".tiff"
