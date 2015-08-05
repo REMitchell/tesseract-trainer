@@ -10,7 +10,6 @@
 <style>
 
 body {
-    padding:10px;
     font-family: Helvetica, Arial, Sans-Serif;
     font-size:14px;
 }
@@ -19,6 +18,8 @@ body {
     background-repeat:no-repeat;
     width:150px; 
     height:150px;
+    /*Makes the image larger, to make boxes easier to position*/
+    background-size:100%;
 }
 .resizeDiv {
 	border:1px solid red;
@@ -45,7 +46,7 @@ body {
 <p>Center each box over its corresponding character. The box file on the right is downloadable</p>
 <div id="canvas">
 </div>
-<input type="file" id="fileElem" accept="image/*" style="display:none" onchange="handleFiles(this.files)">
+<input type="file" id="fileElem" accept="image/*" style="display:none" onchange="handleFiles(this.files)" multiple>
 <p>
 <a href="#" id="fileSelect">Add a new file</a> 
 <div id="fileList">
@@ -63,6 +64,10 @@ body {
 
 window.URL = window.URL || window.webkitURL;
 
+//Global file list
+var fileList;
+var fileIndex = 0;
+
 var fileSelect = document.getElementById("fileSelect"),
     fileElem = document.getElementById("fileElem"),
     fileList = document.getElementById("fileList");
@@ -74,38 +79,48 @@ fileSelect.addEventListener("click", function (e) {
   e.preventDefault(); // prevent navigation to "#"
 }, false);
 
+function addNewFile() {
+    if(window.fileList.length <= window.fileIndex) {
+      $('#canvas').css('background-image','');
+      return;
+    }
+    var img = document.createElement("img");
+    img.src = window.URL.createObjectURL(window.fileList[window.fileIndex]);
+    $('#canvas').css('background-image', 'url(' + img.src + ')');
+    
+    img.onload = function() {
+      window.URL.revokeObjectURL(this.src);
+      console.log("Changing height: "+img.height+" width: "+img.width);
+      $('#canvas').css('height', img.height*2+'px');
+      $('#canvas').css('width', img.width*2+'px');
+    }
+    var info = document.createElement("span");
+    //info.innerHTML = files[i].name + ": " + files[i].size + " bytes";
+    addSquares(window.fileList[window.fileIndex].name);
+    window.fileIndex++;
+}
+
 function handleFiles(files) {
   if (!files.length) {
     fileList.innerHTML = "<p>No files selected!</p>";
   } else {
-    fileList.innerHTML = "";
-    var list = document.createElement("ul");
-    fileList.appendChild(list);
-    for (var i = 0; i < files.length; i++) {
-      
-      var img = document.createElement("img");
-      img.src = window.URL.createObjectURL(files[i]);
-      $('#canvas').css('background-image', 'url(' + img.src + ')');
-      
-      img.onload = function() {
-        window.URL.revokeObjectURL(this.src);
-        console.log("Changing height: "+img.height+" width: "+img.width);
-        $('#canvas').css('height', img.height+'px');
-      	$('#canvas').css('width', img.width+'px');
-      }
-      var info = document.createElement("span");
-      //info.innerHTML = files[i].name + ": " + files[i].size + " bytes";
-      addSquares(files[i].name);
-    }
+    window.fileList = files;
+    window.fileIndex = 0;
+    addNewFile();
   }
 }
+
 $('body').on('mouseup', 'div.resizeDiv', function() {
 	var outputText = "";
     $( ".resizeDiv" ).each(function() {
+      var canvasLeft = $('#canvas').position().left;
+      var canvasTop = $('#canvas').position().top;
     	var position = $(this).position();
-    	var right = position.left + $(this).width();
-    	var bottom = position.top + $(this).height();
-    	outputText += $(this).attr("value")+" "+position.left+" "+position.top+" "+right+" "+bottom+"<br>";
+      var top = parseInt((position.top-canvasTop)/2);
+      var left = parseInt((position.left-canvasLeft)/2);
+    	var right = parseInt((position.left + $(this).width()-canvasLeft)/2);
+    	var bottom = parseInt((position.top + $(this).height()-canvasTop)/2);
+    	outputText += $(this).attr("value")+" "+left+" "+top+" "+right+" "+bottom+"<br>";
 	});
 	console.log(outputText);
 	$("#output").html(outputText);
@@ -141,9 +156,6 @@ function addSquares(filename) {
 }
 
 
-</script>
-<script>
-
 $('.resizeDiv')
 .resizable({
     start: function(e, ui) {
@@ -157,10 +169,7 @@ $('.resizeDiv')
     }
 });
 
-//Handles 
-</script>
 
-<script>
 $("#download").click(function(){
   console.log("Clicked on download link");
   var boxText = $("#output").html();
@@ -188,6 +197,8 @@ function saveAs(uri, filename) {
     } else {
         location.replace(uri);
     }
+    //Add new file to the window
+    addNewFile();
 }
 </script>
 
