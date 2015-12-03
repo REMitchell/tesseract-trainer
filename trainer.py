@@ -1,7 +1,6 @@
 from PIL import Image
 import subprocess
 import os
-import numpy
 
 # Steps to take before running:
 # Set TESSDATA_PREFIX to correct directory
@@ -68,7 +67,7 @@ class TesseractTrainer():
         currentDir = os.getcwd()
         os.chdir(self.directory)
         p = subprocess.Popen(["tesseract", prefix + ".tiff", prefix, "nobatch", "box.train"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        returnValue = stdout_value = p.communicate()[1]
+        returnValue = p.communicate()[1]
         returnValue = returnValue.decode("utf-8")
         if "Empty page!!" in returnValue:
             os.chdir(self.directory)
@@ -149,8 +148,8 @@ class TesseractTrainer():
         os.chdir(currentDir)
 
     def createTessData(self):
+        # Rename all files and run combine_tessdata <language>."""
         print("CREATING TESS DATA...")
-        # Rename all files and run combine_tessdata <language>.
         currentDir = os.getcwd()
         os.chdir(self.directory)
         os.rename("unicharset", self.languageName + ".unicharset")
@@ -168,7 +167,6 @@ class TesseractTrainer():
             return self.boxList
         self.boxList = ""
         files = os.listdir(self.directory)
-        commandString = "unicharset_extractor"
         filesFound = False
 
         for fileName in files:
@@ -189,7 +187,6 @@ class TesseractTrainer():
         self.trainingList = ""
 
         files = os.listdir(self.directory)
-        commandString = "unicharset_extractor"
         filesFound = False
 
         for fileName in files:
