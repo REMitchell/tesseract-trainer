@@ -40,9 +40,11 @@ class TesseractTrainer():
                 newFilePath = root + ".tiff"
                 image.save(self.directory + "/" + newFilePath)
 
-    # Looks for box files, uses the box filename to find the corresponding
-    # .tiff file. Renames all files with the appropriate "<language>.<font>.exp<N>" filename
     def renameFiles(self):
+        """
+            Looks for box files, uses the box filename to find the corresponding
+            .tiff file. Renames all files with the appropriate "<language>.<font>.exp<N>" filename
+        """
         files = os.listdir(self.directory)
         boxString = ""
         i = 0
@@ -60,9 +62,8 @@ class TesseractTrainer():
 
         return boxString
 
-    # Creates a training file for a single tiff/box pair
-    # Called by renameFiles
     def createTrainingFile(self, prefix):
+        """Creates a training file for a single tiff/box pair called by renameFiles."""
         print("CREATING TRAINING DATA...")
         currentDir = os.getcwd()
         os.chdir(self.directory)
@@ -112,8 +113,8 @@ class TesseractTrainer():
         os.chdir(currentDir)
 
     def runMfTraining(self):
-        # mftraining -F font_properties -U unicharset eng.captchaFont.exp0.tr...
         print("RUNNING MF CLUSTERING...")
+        # mftraining -F font_properties -U unicharset eng.captchaFont.exp0.tr...
         self.getTrainingFileList()
         mfCommand = self.trainingList.split(" ")
         mfCommand.insert(0, "mftraining")
@@ -130,8 +131,8 @@ class TesseractTrainer():
         os.chdir(currentDir)
 
     def runCnTraining(self):
-        # cntraining -F font_properties -U unicharset eng.captchaFont.exp0.tr...
         print("RUNNING MF CLUSTERING...")
+        # cntraining -F font_properties -U unicharset eng.captchaFont.exp0.tr
         self.getTrainingFileList()
         cnCommand = self.trainingList.split(" ")
         cnCommand.insert(0, "cntraining")
@@ -148,7 +149,7 @@ class TesseractTrainer():
         os.chdir(currentDir)
 
     def createTessData(self):
-        # Rename all files and run combine_tessdata <language>."""
+        """Rename all files and run combine_tessdata <language>."""
         print("CREATING TESS DATA...")
         currentDir = os.getcwd()
         os.chdir(self.directory)
@@ -178,9 +179,11 @@ class TesseractTrainer():
             self.boxList = None
         return self.boxList
 
-    # Retrieve a list of created training files, caches
-    # the list, so this only needs to be done once.
     def getTrainingFileList(self):
+        """
+            Retrieve a list of created training files, caches
+            the list, so this only needs to be done once.
+        """
         if self.trainingList is not None:
             return self.trainingList
 
