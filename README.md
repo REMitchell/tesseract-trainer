@@ -8,3 +8,7 @@ To run the tesseract trainer, you need to point it at a directory containing a s
 - qwerty.box
 
 Where the file names correspond to the characters that the image contains.
+
+This will produce a trained font file "traineddata.cap" (if you're using the default font name 'cap')
+
+Put this file in /usr/local/share/tessdata to make the font available
