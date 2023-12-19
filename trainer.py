@@ -1,213 +1,142 @@
 from PIL import Image
 import subprocess
 import os
-import numpy
 
 #Steps to take before running:
 #Set TESSDATA_PREFIX to correct directory
 #Put image and box files together in the same directory
 #Label each corresponding file with the same filenames
 
-class TesseractTrainer():
-	def __init__(self):
-		self.languageName = "eng"
-		self.fontName = "captchaFont"
-		self.directory = "/Users/ryan/Documents/tesseract-trainer/images"
-		self.trainingList = None
-		self.boxList = None
+CLEANED_DIR = 'cleaned'
+BOX_DIR = 'box'
+EXP_DIR = 'exp'
 
+class TesseractTrainer():
+	def __init__(self, languageName, fontName, directory='data'):
+		self.languageName = languageName
+		self.fontName = fontName
+		self.directory = directory
 
 	def runAll(self):
-		self.createFontFile()
-		self.cleanImages()
-		self.renameFiles()
+		os.chdir(self.directory)
+		self.createDirectories()
+		self.createFontProperties()
+		prefixes = self.renameFiles()
+		self.createTrainingFiles(prefixes)
 		self.extractUnicode()
 		self.runShapeClustering()
 		self.runMfTraining()
 		self.runCnTraining()
 		self.createTessData()
 
-	def cleanImages(self):
-		print("CLEANING IMAGES...")
-		files = os.listdir(self.directory)
+	def createDirectories(self):
+		if not os.path.exists(CLEANED_DIR):
+			os.mkdir(CLEANED_DIR)
+		if not os.path.exists(EXP_DIR):
+			os.mkdir(EXP_DIR)
 
-		for fileName in files:
-			if fileName.endswith("jpg") or fileName.endswith("jpeg") or fileName.endswith("png"):
-				image = Image.open(self.directory+"/"+fileName)
+	def createFontProperties(self):
+		with open(f'{EXP_DIR}/font_properties', 'w') as f:
+			f.write('f{self.fontName} 0 0 0 0 0')
+
+	def cleanImages(self):
+		images_dir = 'images'
+		print("CLEANING IMAGES...")
+		for fileName in os.listdir(images_dir):
+			root, ext = os.path.splitext(fileName)
+			if ext in ['.jpg', '.jpeg', '.png']:
+				image = Image.open(f'{images_dir}/{fileName}')
 				#Set a threshold value for the image, and save
 				image = image.point(lambda x: 0 if x<250 else 255)
-				(root, ext) = os.path.splitext(fileName)
-
-				newFilePath = root+".tiff"
-				image.save(self.directory+"/"+newFilePath)
-
+				image.save(f'{CLEANED_DIR}/{root}.tiff')
 
 	#Looks for box files, uses the box filename to find the corresponding
 	#.tiff file. Renames all files with the appropriate "<language>.<font>.exp<N>" filename
 	def renameFiles(self):
-		files = os.listdir(self.directory)
-		boxString = ""
-		i = 0
-		for fileName in files:
-			if fileName.endswith(".box"):
-				(root, ext) = os.path.splitext(fileName)
-				tiffFile = self.languageName+"."+self.fontName+".exp"+str(i)+".tiff"
-				boxFile = self.languageName+"."+self.fontName+".exp"+str(i)+".box"
+		file_prefixes = []
+		for i, boxFile in enumerate([f for f in os.listdir(BOX_DIR) if f.endswith('.box')]):
+			root, _ = os.path.splitext(boxFile)
+			os.system(f'cp {CLEANED_DIR}/{root}.tiff {EXP_DIR}/{self.languageName}.{self.fontName}.exp{i}.tiff')
+			os.system(f'cp {BOX_DIR}/{root}.box {EXP_DIR}/{self.languageName}.{self.fontName}.exp{i}.box')
+			file_prefixes.append(f'{self.languageName}.{self.fontName}.exp{i}')
 
-				os.rename(self.directory+"/"+root+".tiff", self.directory+"/"+tiffFile)
-				os.rename(self.directory+"/"+root+".box", self.directory+"/"+boxFile)
-				boxString += " "+boxFile
-				self.createTrainingFile(self.languageName+"."+self.fontName+".exp"+str(i))
-				i += 1
-
-		return boxString
+		return file_prefixes
 
 	#Creates a training file for a single tiff/box pair
-	#Called by renameFiles
-	def createTrainingFile(self, prefix):
+	def createTrainingFiles(self, prefixes):
 		print("CREATING TRAINING DATA...")
-		currentDir = os.getcwd()
-		os.chdir(self.directory)
-		p = subprocess.Popen(["tesseract", prefix+".tiff", prefix, "nobatch", "box.train"], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-		returnValue = stdout_value = p.communicate()[1]
-		returnValue = returnValue.decode("utf-8")
-		if "Empty page!!" in returnValue:
-			os.chdir(self.directory)
-			subprocess.call(["tesseract", "-psm", "7", prefix+".tiff", prefix, "nobatch", "box.train"])
-		os.chdir(currentDir)
-
+		os.chdir(EXP_DIR)
+		for prefix in prefixes:
+			p = subprocess.Popen(["tesseract", prefix+".tiff", prefix, "nobatch", "box.train"], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+			returnValue = stdout_value = p.communicate()[1]
+			returnValue = returnValue.decode("utf-8")
+			print(prefix)
+			print(returnValue)
+			if "Empty page!!" in returnValue:
+				print(returnValue)
+				subprocess.call(["tesseract", "-psm", "7", prefix+".tiff", prefix, "nobatch", "box.train"])
+		os.chdir('..')
 
 	def extractUnicode(self):
-		currentDir = os.getcwd()
 		print("EXTRACTING UNICODE...")
-		boxList = self.getBoxFileList()
-		boxArr = boxList.split(" ")
-		boxArr.insert(0, "unicharset_extractor")
-		boxArr = [i for i in boxArr if i != '']
-		os.chdir(self.directory)
-		p = subprocess.Popen(boxArr)
+		extractCommand = ['unicharset_extractor'] + [f for f in os.listdir(EXP_DIR) if f.endswith('.box')]
+		os.chdir(EXP_DIR)
+		p = subprocess.Popen(extractCommand)
 		p.wait()
-		os.chdir(currentDir)
-
-	def createFontFile(self):
-		currentDir = os.getcwd()
-		os.chdir(self.directory)
-		fname = self.directory+"/font_properties"
-		with open(fname, 'w') as fout:
-		    fout.write(self.fontName+" 0 0 0 0 0")
-		os.chdir(currentDir)
+		os.chdir('..')
 
 	def runShapeClustering(self):
 		print("RUNNING SHAPE CLUSTERING...")
 		#shapeclustering -F font_properties -U unicharset eng.captchaFont.exp0.tr...
-		self.getTrainingFileList()
-		shapeCommand = self.trainingList.split(" ")
-		shapeCommand.insert(0, "shapeclustering")
-		shapeCommand.insert(1, "-F")
-		shapeCommand.insert(2, "font_properties")
-		shapeCommand.insert(3, "-U")
-		shapeCommand.insert(4, "unicharset")
-		shapeCommand = [i for i in shapeCommand if i != '']
-		currentDir = os.getcwd()
-		os.chdir(self.directory)
+		shapeCommand = ['shapeclustering', '-F', 'font_properties', '-U', 'unicharset']
+		shapeCommand = shapeCommand + self.getTrainingFileList()
+		os.chdir(EXP_DIR)
 		p = subprocess.Popen(shapeCommand)
 		p.wait()
-		os.chdir(currentDir)
+		os.chdir('..')
 
 
 	def runMfTraining(self):
 		#mftraining -F font_properties -U unicharset eng.captchaFont.exp0.tr...
 		print("RUNNING MF CLUSTERING...")
-		self.getTrainingFileList()
-		mfCommand = self.trainingList.split(" ")
-		mfCommand.insert(0, "mftraining")
-		mfCommand.insert(1, "-F")
-		mfCommand.insert(2, "font_properties")
-		mfCommand.insert(3, "-U")
-		mfCommand.insert(4, "unicharset")
-		mfCommand = [i for i in mfCommand if i != '']
-
-		currentDir = os.getcwd()
-		os.chdir(self.directory)
+		mfCommand = ['mftraining', '-F', 'font_properties', '-U', 'unicharset']
+		mfCommand = mfCommand + self.getTrainingFileList()
+		os.chdir(EXP_DIR)
 		p = subprocess.Popen(mfCommand)
 		p.wait()
-		os.chdir(currentDir)
+		os.chdir('..')
 
 	def runCnTraining(self):
 		#cntraining -F font_properties -U unicharset eng.captchaFont.exp0.tr...
-		print("RUNNING MF CLUSTERING...")
-		self.getTrainingFileList()
-		cnCommand = self.trainingList.split(" ")
-		cnCommand.insert(0, "cntraining")
-		cnCommand.insert(1, "-F")
-		cnCommand.insert(2, "font_properties")
-		cnCommand.insert(3, "-U")
-		cnCommand.insert(4, "unicharset")
-		cnCommand = [i for i in cnCommand if i != '']
-
-		currentDir = os.getcwd()
-		os.chdir(self.directory)
+		print('RUNNING MF CLUSTERING...')
+		cnCommand = ['cntraining', '-F', 'font_properties', '-U', 'unicharset']
+		cnCommand = cnCommand + self.getTrainingFileList()
+		os.chdir(EXP_DIR)
 		p = subprocess.Popen(cnCommand)
 		p.wait()
-		os.chdir(currentDir)
+		os.chdir('..')
 
 
 	def createTessData(self):
 		print("CREATING TESS DATA...")
+		os.chdir(EXP_DIR)
 		#Rename all files and run combine_tessdata <language>.
-		currentDir = os.getcwd()
-		os.chdir(self.directory)
-		os.rename("unicharset", self.languageName+".unicharset")
-		os.rename("shapetable", self.languageName+".shapetable")
-		os.rename("inttemp", self.languageName+".inttemp")
-		os.rename("normproto", self.languageName+".normproto")
-		os.rename("pffmtable", self.languageName+".pffmtable")
+		os.rename('unicharset', self.languageName+'.unicharset')
+		os.rename('shapetable', self.languageName+'.shapetable')
+		os.rename('inttemp', self.languageName+'.inttemp')
+		os.rename('normproto', self.languageName+'.normproto')
+		os.rename('pffmtable', self.languageName+'.pffmtable')
 
-		p = subprocess.Popen(["combine_tessdata", self.languageName+"."])
+		p = subprocess.Popen(['combine_tessdata', self.languageName+'.'])
+		#mv captcha.traineddata $TESSDATA_PREFIX/captcha.traineddata 
 		p.wait()
-		os.chdir(currentDir)
+		os.chdir('..')
 
 
-	def getBoxFileList(self):
-		if self.boxList is not None:
-			return self.boxList
-		self.boxList = ""
-		files = os.listdir(self.directory)
-		commandString = "unicharset_extractor"
-		filesFound = False
-
-		for fileName in files:
-			if fileName.endswith(".box"):
-				filesFound = True
-				self.boxList += " "+fileName
-
-		if not filesFound:
-			self.boxList = None
-		return self.boxList
-
-	#Retrieve a list of created training files, caches 
-	#the list, so this only needs to be done once.
+	#Retrieve a list of created training files
 	def getTrainingFileList(self):
-		if self.trainingList is not None:
-			return self.trainingList
+		return [f for f in os.listdir(EXP_DIR) if f.endswith('.tr')]
 
-		self.trainingList = ""
-
-		files = os.listdir(self.directory)
-		commandString = "unicharset_extractor"
-		filesFound = False
-
-		for fileName in files:
-			if fileName.endswith(".tr"):
-				filesFound = True
-				self.trainingList += " "+fileName
-
-		if not filesFound:
-			self.trainingList = None
-		return self.trainingList
-
-
-
-trainer = TesseractTrainer()
+trainer = TesseractTrainer('captcha', 'captchaFont')
 trainer.runAll()
 

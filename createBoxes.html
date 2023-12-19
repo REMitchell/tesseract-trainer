@@ -40,30 +40,36 @@ body {
 
 </head>
 <body>
-<table><tr>
-<td>
-<div id="title"></div>
-<p>Center each box over its corresponding character. The box file on the right is downloadable</p>
-<div id="canvas">
-</div>
-<input type="file" id="fileElem" accept="image/*" style="display:none" onchange="handleFiles(this.files)" multiple>
-<p>
-<a href="#" id="fileSelect">Add a new file</a> 
-<div id="fileList">
+<table>
+<tr>
+  <td>
+    <div id="title"></div>
+      <p>Center each box over its corresponding character. The box file on the right is downloadable</p>
+      <div id="canvas">
+    </div>
+  </td>
+  <td>
+    <div id="output"></div>
+    <span id="download" style="">Download .box</span>
+  </td>
+</tr>
+<tr>
+  <td>
+    <input type="file" id="fileElem" accept="image/*" style="display:none" onchange="handleFiles(this.files)" multiple>
   <p>
-  <p>No files selected!</p>
-</div>
-</td><td>
-<div id="output"></div>
-
-<span id="download" style="">Download .box</span>
-
-</td></tr></table>
+  <a href="#" id="fileSelect">Add files</a> 
+  <div id="fileList">
+    <p>No files selected!</p>
+  </div>
+  </td>
+  <td></td>
+</tr>
+</table>
 
 <script>
 
 window.URL = window.URL || window.webkitURL;
-
+const img_multiplier = 3;
 //Global file list
 var fileList;
 var fileIndex = 0;
@@ -80,6 +86,7 @@ fileSelect.addEventListener("click", function (e) {
 }, false);
 
 function addNewFile() {
+  
     if(window.fileList.length <= window.fileIndex) {
       $('#canvas').css('background-image','');
       return;
@@ -90,14 +97,24 @@ function addNewFile() {
     
     img.onload = function() {
       window.URL.revokeObjectURL(this.src);
-      console.log("Changing height: "+img.height+" width: "+img.width);
-      $('#canvas').css('height', img.height*2+'px');
-      $('#canvas').css('width', img.width*2+'px');
+      $('#canvas').css('height', img.height*img_multiplier+'px');
+      $('#canvas').css('width', img.width*img_multiplier+'px');
     }
     var info = document.createElement("span");
     //info.innerHTML = files[i].name + ": " + files[i].size + " bytes";
     addSquares(window.fileList[window.fileIndex].name);
     window.fileIndex++;
+    console.log('WINDOW FILE LIST:')
+    console.log(window.fileList.length)
+    const filenames = [];
+    for(var i = window.fileIndex; i  < window.fileList.length; i++) {
+      filenames.push(window.fileList[i].name);
+    }
+    console.log('SETTING INNER HTML:');
+    console.log(filenames.join('<br/>'))
+    document.getElementById("fileList").innerHTML = filenames.join('<br/>');
+    
+    
 }
 
 function handleFiles(files) {
@@ -116,10 +133,10 @@ $('body').on('mouseup', 'div.resizeDiv', function() {
       var canvasLeft = $('#canvas').position().left;
       var canvasTop = $('#canvas').position().top;
     	var position = $(this).position();
-      var top = parseInt((position.top-canvasTop)/2);
-      var left = parseInt((position.left-canvasLeft)/2);
-    	var right = parseInt((position.left + $(this).width()-canvasLeft)/2);
-    	var bottom = parseInt((position.top + $(this).height()-canvasTop)/2);
+      var top = Math.round((position.top-canvasTop)/img_multiplier);
+      var left = Math.round((position.left-canvasLeft)/img_multiplier);
+    	var right = Math.round((position.left + $(this).width()-canvasLeft)/img_multiplier);
+    	var bottom = Math.round((position.top + $(this).height()-canvasTop)/img_multiplier);
     	outputText += $(this).attr("value")+" "+left+" "+top+" "+right+" "+bottom+"<br>";
 	});
 	console.log(outputText);
@@ -130,7 +147,6 @@ $('body').on('mouseup', 'div.resizeDiv', function() {
 function addSquares(filename) {
   //Get rid of the old squares
   $('.resizeDiv').remove();
-	console.log("Adding squares for name "+filename);
   var title = "";
 	for(var i=0; i < filename.length; i++) {
 		if(filename.charAt(i) == ".") {
